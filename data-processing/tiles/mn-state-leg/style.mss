@@ -21,7 +21,7 @@ Map {
 
 #pvi2012leg {
   line-color: darken(@neutral, 50%);
-  line-width: 0.1;
+  line-width: 0.5;
   polygon-opacity: 0.8;
   polygon-fill: @neutral;
   /*

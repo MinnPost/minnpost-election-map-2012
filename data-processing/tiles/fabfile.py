@@ -185,9 +185,14 @@ def generate_tiles_from_mbtile():
   exists = os.path.exists('%(map)s/exports/%(map)s.mbtiles' % env)
   if exists:
     with settings(warn_only=True):
+      # MB-Util uses 'osm' as the scheme name
+      env.mb_utl_scheme = env.tile_scheme
+      if env.tile_scheme == 'xyz':
+        env.mb_utl_scheme = 'osm'
+    
       local('rm -rf %(map)s/tiles-tmp' % env)
       local('rm -rf %(map)s/tiles' % env)
-      local('mb-util --scheme=%(tile_scheme)s %(map)s/exports/%(map)s.mbtiles %(map)s/tiles-tmp' % env)
+      local('mb-util --scheme=%(mb_utl_scheme)s %(map)s/exports/%(map)s.mbtiles %(map)s/tiles-tmp' % env)
       local('mv "%(map)s/tiles-tmp/%(map_version)s/%(map_title)s" %(map)s/tiles' % env)
       local('mv %(map)s/tiles-tmp/metadata.json %(map)s/tiles/metadata.json' % env)
   else:
