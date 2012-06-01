@@ -1,0 +1,53 @@
+{
+  "bounds": [
+    -102.832,
+    38.2727,
+    -84.0234,
+    52.6964
+  ],
+  "center": [
+    -93.8672,
+    45.9511,
+    3
+  ],
+  "format": "png",
+  "interactivity": {
+    "layer": "pvi2012sen",
+    "template_teaser": "Data: {{{DISTRICT}}} {{{PVI06}}} {{{PVI08}}} {{{PVI10}}} {{{PVI}}} {{{RPVI}}}",
+    "template_full": "Data: {{{DISTRICT}}} {{{PVI06}}} {{{PVI08}}} {{{PVI10}}} {{{PVI}}} {{{RPVI}}}",
+    "fields": [
+      "DISTRICT",
+      "PVI06",
+      "PVI08",
+      "PVI10",
+      "PVI",
+      "RPVI"
+    ]
+  },
+  "minzoom": 3,
+  "maxzoom": 13,
+  "srs": "+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0.0 +k=1.0 +units=m +nadgrids=@null +wktext +no_defs +over",
+  "Stylesheet": [
+    "style.mss"
+  ],
+  "Layer": [
+    {
+      "geometry": "polygon",
+      "id": "pvi2012sen",
+      "class": "",
+      "Datasource": {
+        "file": "https://s3.amazonaws.com/data.minnpost/projects/minnpost-elections-map-2012/data/pvi_2012_sen.zip",
+        "id": "pvi2012leg",
+        "project": "mn-state-leg",
+        "srs": null
+      },
+      "srs-name": "autodetect",
+      "srs": "",
+      "name": "pvi2012sen"
+    }
+  ],
+  "name": "Minnesota State Senate Districts",
+  "description": "The Minnesota State Senate Districts",
+  "attribution": "",
+  "legend": ""
+}
