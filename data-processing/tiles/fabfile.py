@@ -9,6 +9,7 @@ import os
 import warnings
 import json
 import re
+import urllib2
 from fabric.api import *
 
 """
@@ -203,44 +204,28 @@ def generate_tilejson():
   _create_map_suffix()
   
   # Utilize project data
-  with open('%(map)s/project.mml' % env, 'r') as f:
-    config = json.load(f)
-    tilejson = {}
+  response = urllib2.urlopen('http://localhost:20009/api/Project/%(map)s' % env)
+  config = json.load(response)
+  if config:
+    tilejson = config
     
-    # Base values
+    # Force scheme as tilemill always like xyz and maybe we dont
     tilejson['scheme'] = env.tile_scheme
-    tilejson['tilejson'] = '2.0.0'
-    tilejson['id'] = env.map
     
     # Attempt to get values from config
     try:
-      tilejson['name'] = config['name'] if config.has_key('name') else ''
-      tilejson['description'] = config['description'] if config.has_key('description') else ''
       tilejson['version'] = config['version'] if config.has_key('version') else '1.0.0'
-      tilejson['attribution'] = config['attribution'] if config.has_key('attribution') else ''
-      tilejson['legend'] = config['legend'] if config.has_key('legend') else ''
-      tilejson['minzoom'] = config['minzoom'] if config.has_key('minzoom') else 0
-      tilejson['maxzoom'] = config['maxzoom'] if config.has_key('maxzoom') else 22
       tilejson['bounds'] = config['bounds'] if config.has_key('bounds') else [-180, -90, 180, 90]
-      tilejson['center'] = config['center'] if config.has_key('center') else null
     except KeyError:
       print 'Key error'
     
-    # Template is in the metadata.json file
-    with open('%(map)s/tiles/metadata.json' % env, 'r') as j:
-      metadata = json.load(j)
-      try:
-        tilejson['template'] = metadata['template']
-      except KeyError:
-        tilejson['template'] = ''
-    
-    # Figure out template
+    # Figure out templates
     tilejson['grids'] = []
     tilejson['tiles'] = []
-    for bucket in env.s3_buckets:
-      env.s3_bucket = bucket 
-      tilejson['grids'].append('http://%(s3_bucket)s.s3.amazonaws.com/%(project_name)s/%(map)s%(map_suffix)s/%(tile_template)s.grid.json' % env)
-      tilejson['tiles'].append('http://%(s3_bucket)s.s3.amazonaws.com/%(project_name)s/%(map)s%(map_suffix)s/%(tile_template)s.png' % env)
+    for bucket in env.base_tiles_grids:
+      env.this_bucket = bucket 
+      tilejson['grids'].append('%(this_bucket)s/%(project_name)s/%(map)s%(map_suffix)s/%(tile_template)s.grid.json' % env)
+      tilejson['tiles'].append('%(this_bucket)s/%(project_name)s/%(map)s%(map_suffix)s/%(tile_template)s.png' % env)
     
     # Write regular and jsonp tilejson files
     tilejson_file = open('%(map)s/tiles/tilejson.json' % env, 'w')
