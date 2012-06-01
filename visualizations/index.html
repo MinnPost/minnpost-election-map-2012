@@ -1,0 +1,206 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
+
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>MinnPost</title>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  
+  <!--
+  <link type="text/css" rel="stylesheet" media="all" href="http://www.minnpost.com/sites/default/files/css/css_efc75eaad579035887d5e1ac11c00b78.css" />
+<link type="text/css" rel="stylesheet" media="screen" href="http://www.minnpost.com/sites/default/files/css/css_b444460873a77de36d695396b0924929.css" />
+<link type="text/css" rel="stylesheet" media="print" href="http://www.minnpost.com/sites/default/files/css/css_f3f76e4e053f459547daa56b3627cfe3.css" />
+-->
+
+  <!--[if IE]>
+      <link rel="stylesheet" href="http://www.minnpost.com/sites/default/themes/derma/inc/css/ie.css?d" type="text/css" />
+  <![endif]-->
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1"></meta>
+</head>
+<body class="not-front logged-in page-node node-type-article one-sidebar sidebar-right admin-nw admin-vertical admin-df  section-data section-data-id-2012 section-data-id-2012-id-05 section-data-id-2012-id-05-how-we-built-legislative-bill-explorer one-sidebar sidebar-right">
+<div class="outside-embeddable-container">
+
+  <!-- START: Embeddable -->
+  <div class="node-body fieldlayout node-field-body">
+    <style type="text/css">
+      @import url('https://s3.amazonaws.com/data.minnpost/js/leaflet-master-20120531/leaflet.css');
+      @import url('https://s3.amazonaws.com/data.minnpost/js/leaflet-addons-master-20120531/leaflet-addons.css');
+    </style>
+    
+    <!-- START: To be inline CSS -->
+    <style type="text/css">
+      .outside-embeddable-container {
+        max-width: 960px;
+        margin: 0 auto;
+      }
+      
+      .js-dependent,
+      .hide {
+        display: none;
+      }
+      
+      .footnote {
+        font-size: .75em;
+        font-style: italic;
+        color: #414141;
+        margin-top: 1em;
+      }
+      
+      #minnpost-election-map-2012-application {
+        position: relative;
+      }
+      
+      #map {
+        width: 100%;
+        height: 500px;
+      }
+    </style>
+    <!-- END: To be inline CSS -->
+    
+    <!--[if lte IE 8]>
+      <style type="text/css">
+        @import url('https://s3.amazonaws.com/data.minnpost/js/leaflet-master-20120531/leaflet.ie.css');
+        @import url('https://s3.amazonaws.com/data.minnpost/js/leaflet-addons-master-20120531/leaflet-addons.ie.css');
+      </style>
+    <![endif]-->
+    
+    <div id="minnpost-election-map-2012-application">
+      
+      <div id="map"></div>
+      
+    </div>
+    
+    <p class="footnote"></p>
+    
+    <!-- Templates to be used in client side processing. -->
+    <script id="template-1" type="text/template">
+      <div class="thing-1">
+      </div>
+    </script>
+  
+    <!-- jQuery -->
+    <script type="text/javascript">
+      window.jQuery || document.write('<script type="text/javascript" src="https://s3.amazonaws.com/data.minnpost/js/jquery-1.7.2/jquery-1.7.2.min.js"><\/script>')
+    </script>
+    <!-- Leaflet and wax for mapping -->
+    <script type="text/javascript" src="https://s3.amazonaws.com/data.minnpost/js/leaflet-master-20120531/leaflet.js"></script>
+    <script type="text/javascript" src="https://s3.amazonaws.com/data.minnpost/js/leaflet-addons-master-20120531/leaflet-addons.min.js"></script>
+    <script type="text/javascript" src="https://s3.amazonaws.com/data.minnpost/js/wax-v6.0.4/wax.leaf.min.js"></script>
+    <script type="text/javascript" src="https://s3.amazonaws.com/data.minnpost/js/underscore-1.3.3/underscore-min.js"></script>
+    <script type="text/javascript" src="https://s3.amazonaws.com/data.minnpost/js/backbone-0.9.2/backbone-min.js"></script>
+    
+    <!-- START: To be inline JS -->
+    <script type="text/javascript">
+      // A place for our globals
+      window.MinnPost = window.MinnPost || {};
+      
+      (function(window, $, undefined) {
+        var MapView = window.MinnPost.MapView = Backbone.View.extend({
+          // Easy place for options
+          options: {
+            'mapOptions': {
+              'minZoom': 3,
+              'maxZoom': 15
+            },
+            'mapID': 'map',
+            'mapDefaultCenter': new L.LatLng(46.49839225859763, -93.6474609375),
+            'mapDefaultZoom': 6
+          },
+          
+          // Some placeholders
+          mapLayers: {},
+          mapTileJSON: {},
+          
+          // Init funciton
+          initialize: function() {
+            this.drawMap();
+            
+          },
+          
+          // Handles drawing map
+          drawMap: function() {
+            this.map = new L.Map(this.options.mapID, this.options.mapOptions);
+            this.addMapLayers();
+            this.map.setView(this.options.mapDefaultCenter, this.options.mapDefaultZoom);
+            this.map.addControl(new L.Control.Fullscreen());
+            
+            // Move attributioin to footnotes
+            this.map.attributionControl.setPrefix('');
+            $('.footnote').html($('.footnote').html() + ' ' + this.map.attributionControl._container.innerHTML);
+            this.map.removeControl(this.map.attributionControl);
+            
+            return this;
+          },
+          
+          // Map layers
+          addMapLayers: function() {
+            var thisView = this;
+            var baselayers = {};
+            var overlays = {};
+            
+            // Mapbox base layer
+            thisView.mapLayers.mapboxBase = new L.TileLayer("http://{s}.tiles.mapbox.com/v3/zzolo.map-6m4vfqel/{z}/{x}/{y}.png", {
+              attribution: 'Some map imagery from <a target="_blank" href="http://mapbox.com">Mapbox</a>; ', 
+              subdomains: ['a', 'b', 'c', 'd']
+            });
+            this.map.addLayer(thisView.mapLayers.mapboxBase);
+          
+            // Minnnpost base map
+            thisView.mapLayers.minnpostBase = new L.TileLayer('http://{s}.tiles.minnpost.com/minnpost-basemaps/' +
+              'minnpost-minnesota-greyscale-no-labels/{z}/{x}/{y}.png', {
+                attribution: 'Some map imagery from <a target="_blank" href="http://minnpost.com">MinnPost</a>; ' +
+                  'Some map data from <a target="_blank" href="http://openstreetmap.org">OpenStreetMap</a>; ',
+                scheme: 'tms'
+              }
+            );
+            this.map.addLayer(thisView.mapLayers.minnpostBase);
+            
+            // Labels
+            thisView.mapLayers.minnpostLabels = new L.TileLayer('http://{s}.tiles.minnpost.com/minnpost-basemaps/' +
+              'minnpost-minnesota-greyscale-labels/{z}/{x}/{y}.png', {
+                scheme: 'tms'
+              }
+            );
+            
+            // Add route layer with TileJSON, then add labels on top
+            wax.tilejson('http://a.tiles.minnpost.com/minnpost-election-map-2012/mn-state-leg/tilejson.jsonp', function(tilejson) {
+              thisView.mapTileJSON.legLayer = tilejson;
+            
+              // Create new layer
+              thisView.mapLayers.legLayer = new wax.leaf.connector(tilejson);
+              overlays[tilejson.name] = thisView.mapLayers.legLayer;
+              thisView.map.addLayer(thisView.mapLayers.legLayer);
+              
+              // Interation for leglayer
+              wax.leaf.interaction()
+                .map(thisView.map)
+                .tilejson(tilejson)
+                .on(wax.tooltip().parent(thisView.map._container).events());
+              
+              // Add labels
+              thisView.map.addLayer(thisView.mapLayers.minnpostLabels);
+                
+              // Add control for layers
+              var layersControl = new L.Control.Layers(baselayers, overlays);
+              thisView.map.addControl(layersControl);
+            });
+            
+            return this;
+          }
+        });
+        
+        $(document).ready(function() {
+          var electionMapView = new window.MinnPost.MapView();
+        })
+      })(window, jQuery);
+    </script>
+    <!-- END: To be inline JS -->
+    
+  </div>
+  <!-- END: Embeddable -->
+
+</div>
+</body>
+</html>
