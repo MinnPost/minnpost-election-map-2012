@@ -164,7 +164,7 @@
               }
             );
             
-            // Add route layer with TileJSON, then add labels on top
+            // Add leg layer with TileJSON
             wax.tilejson('http://a.tiles.minnpost.com/minnpost-election-map-2012/mn-state-leg/tilejson.jsonp', function(tilejson) {
               thisView.mapTileJSON.legLayer = tilejson;
             
@@ -172,19 +172,30 @@
               thisView.mapLayers.legLayer = new wax.leaf.connector(tilejson);
               overlays[tilejson.name] = thisView.mapLayers.legLayer;
               thisView.map.addLayer(thisView.mapLayers.legLayer);
-              
-              // Interation for leglayer
-              wax.leaf.interaction()
-                .map(thisView.map)
-                .tilejson(tilejson)
-                .on(wax.tooltip().parent(thisView.map._container).events());
-              
-              // Add labels
-              thisView.map.addLayer(thisView.mapLayers.minnpostLabels);
+            
+              // Add leg layer with TileJSON
+              wax.tilejson('http://a.tiles.minnpost.com/minnpost-election-map-2012/mn-state-sen/tilejson.jsonp', function(tilejson) {
+                thisView.mapTileJSON.senLayer = tilejson;
+            
+                // Create new layer
+                thisView.mapLayers.senLayer = new wax.leaf.connector(tilejson);
+                overlays[tilejson.name] = thisView.mapLayers.senLayer;
                 
-              // Add control for layers
-              var layersControl = new L.Control.Layers(baselayers, overlays);
-              thisView.map.addControl(layersControl);
+                // Interation for leglayer
+                /*
+                wax.leaf.interaction()
+                  .map(thisView.map)
+                  .tilejson(tilejson)
+                  .on(wax.tooltip().parent(thisView.map._container).events());
+                */
+                
+                // Add labels
+                thisView.map.addLayer(thisView.mapLayers.minnpostLabels);
+                  
+                // Add control for layers
+                var layersControl = new L.Control.Layers(baselayers, overlays);
+                thisView.map.addControl(layersControl);
+              });
             });
             
             return this;
