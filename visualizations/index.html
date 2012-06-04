@@ -66,6 +66,46 @@
       .side-column-inner {
         padding: 10px;
       }
+      
+      .layer-switcher-container {
+        margin-top: 1.5em;
+      }
+      .layer-switcher-container ul,
+      .layer-switcher-container li {
+        list-style: none;
+      }
+      .layer-switcher-container li a.active {
+        font-weight: bold;
+      }
+      
+      .map-popup-container {
+        margin-top: 1.5em;
+      }
+      .map-popup-container ul,
+      .map-popup-container li {
+        list-style: none;
+      }
+      
+      .map-popup-container .party-DFL,
+      .map-popup-container .party-R,
+      .map-popup-container .party-IP {
+        width: 15px;
+        height: 15px;
+        margin-right: .75em;
+        margin-top: 3px;
+        display: inline-block;
+        zoom: 1;
+        *display: inline;
+      }
+      .map-popup-container .party-DFL {
+        background-color: #243746;
+      }
+      .map-popup-container .party-R {
+        background-color: #641a1b;
+      }
+      .map-popup-container .party-IP {
+        background-color: #7B7B7B;
+      }
     </style>
     <!-- END: To be inline CSS -->
     
@@ -88,16 +128,16 @@
     <script id="template-side-column" type="text/template">
       <div class="side-column">
         <div class="side-column-inner">
-          <h3>Search address</h3>
           <div class="search-address-container">
+            <h3>Search address</h3>
             <form class="search-address-form">
               <input type="text" id="search-address-input" class="form-text" />
               <input type="submit" id="search-address-submit" class="form-submit" value="search" />
             </form>
           </div>
           
-          <h3>Show districts</h3>
           <div class="layer-switcher-container">
+            <h3>Show districts</h3>
           </div>
           
           <div class="map-popup-container">
@@ -115,19 +155,28 @@
       </ul>
     </script>
     <script id="template-popup-contents" type="text/template">
-      <h3><%= title %></h3>
-      <div class="pvi">Political leaning: <%= tileData.RPVI %></div>
-      <ul>
-        <% for (var c in cands) { %>
-          <li>
-            <% if (_.isString(cands[c].website) && cands[c].website !== '') { %>
-              <a href="http://<%= cands[c].website %>" target="_blank"><%= cands[c].candidate %></a> (<%= cands[c].party %>)
-            <% } else { %>
-              <%= cands[c].candidate %> (<%= cands[c].party %>)
+      <h4><%= title %></h4>
+      <div class="pvi">Political leaning: <em><%= tileData.RPVI %></em></div>
+      <% if (!_.isEmpty(cands)) { %>
+        <ul>
+          <% var groups = _.groupBy(cands, 'party'); %>
+          <% var groups = _.sortBy(groups, function(g) { return g[0].party; }); %>
+          <% for (var g in groups) { %>
+            <% var gCands = _.sortBy(groups[g], 'candidate'); %>
+            <% for (var c in gCands) { %>
+              <li><span class="party-<%= gCands[c].party %>"></span>
+                <% if (_.isString(gCands[c].website) && gCands[c].website !== '') { %>
+                  <a href="http://<%= gCands[c].website %>" target="_blank"><%= gCands[c].candidate %></a> (<%= gCands[c].party %>)
+                <% } else { %>
+                  <%= gCands[c].candidate %> (<%= gCands[c].party %>)
+                <% } %>
+              </li>
             <% } %>
-          </li>
-        <% } %>
-      </ul>
+          <% } %>
+        </ul>
+      <% } else { %>
+        <div>No candidates found.</div>
+      <% } %>
     </script>
   
     <!-- jQuery -->
@@ -248,8 +297,8 @@
             $(this.options.applicationSelector).append(template);
             
             // Move map over, and append
-            $('#map').css({ width: '70%' });
-            $('.side-column').css({ width: '30%', float: 'left' });
+            $('#map').css({ width: '60%' });
+            $('.side-column').css({ width: '40%', float: 'left' });
             this.map.invalidateSize();
           },
           
