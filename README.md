@@ -11,7 +11,7 @@ cd data-processing/tiles/ && fab map:mn-state-leg link; cd -;
 cd data-processing/tiles/ && fab map:mn-state-sen link; cd -;
 ```
 
-To export the tiles, run the following:
+To export the tiles, run the following (with the Tilemill application running):
 
 ```
 cd data-processing/tiles/ && fab map:mn-state-leg production export_deploy:32,3,12; cd -;
