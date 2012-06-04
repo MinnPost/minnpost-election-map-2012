@@ -6,11 +6,9 @@
   <title>MinnPost</title>
   <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
   
-  <!--
   <link type="text/css" rel="stylesheet" media="all" href="http://www.minnpost.com/sites/default/files/css/css_efc75eaad579035887d5e1ac11c00b78.css" />
 <link type="text/css" rel="stylesheet" media="screen" href="http://www.minnpost.com/sites/default/files/css/css_b444460873a77de36d695396b0924929.css" />
 <link type="text/css" rel="stylesheet" media="print" href="http://www.minnpost.com/sites/default/files/css/css_f3f76e4e053f459547daa56b3627cfe3.css" />
--->
 
   <!--[if IE]>
       <link rel="stylesheet" href="http://www.minnpost.com/sites/default/themes/derma/inc/css/ie.css?d" type="text/css" />
@@ -36,6 +34,10 @@
         margin: 0 auto;
       }
       
+      .clear {
+        clear: both;
+      }
+      
       .js-dependent,
       .hide {
         display: none;
@@ -55,6 +57,14 @@
       #map {
         width: 100%;
         height: 500px;
+        float: left;
+      }
+      
+      .side-column {
+        float: left;
+      }
+      .side-column-inner {
+        padding: 10px;
       }
     </style>
     <!-- END: To be inline CSS -->
@@ -67,17 +77,41 @@
     <![endif]-->
     
     <div id="minnpost-election-map-2012-application">
-      
       <div id="map"></div>
       
     </div>
     
+    <br class="clear" />
     <p class="footnote"></p>
     
     <!-- Templates to be used in client side processing. -->
-    <script id="template-1" type="text/template">
-      <div class="thing-1">
+    <script id="template-side-column" type="text/template">
+      <div class="side-column">
+        <div class="side-column-inner">
+          <h3>Search</h3>
+          <div class="search-address">
+            <form class="search-address-form">
+              <label for="search-address-input">Search address:</label>
+              <input type="text" id="search-address-input" />
+            </form>
+          </div>
+          
+          <h3>Show districts</h3>
+          <div class="layer-switcher-container">
+          </div>
+          
+          <div class="map-popup-contents">
+          
+          </div>
+        </div>
       </div>
+    </script>
+    <script id="template-layer-switcher" type="text/template">
+      <ul>
+        <% for (var l in layers) { %>
+          <li><a href="#" data-id="<%= l %>"><%= l %></a></li>
+        <% } %>
+      </ul>
     </script>
   
     <!-- jQuery -->
@@ -106,17 +140,60 @@
             },
             'mapID': 'map',
             'mapDefaultCenter': new L.LatLng(46.49839225859763, -93.6474609375),
-            'mapDefaultZoom': 6
+            'mapDefaultZoom': 6,
+            'applicationSelector': '#minnpost-election-map-2012-application'
           },
           
           // Some placeholders
           mapLayers: {},
           mapTileJSON: {},
+          mapOverlays: {},
           
           // Init funciton
           initialize: function() {
             this.drawMap();
+            this.drawSide();
             
+          },
+          
+          // Handles drawing layer switcher content
+          drawLayerSwitcher: function() {
+            var thisView = this;
+            // For each data layer, add link
+            var template = _.template($("#template-layer-switcher").html(), { layers: this.mapOverlays });
+            $('.layer-switcher-container').append(template);
+            
+            // Click events
+            $('.layer-switcher-container li a').click(function(e) {
+              e.preventDefault();
+              var thisLayer = $(this).attr('data-id');
+              var l;
+              
+              // Go through layers and hide others
+              for (l in thisView.mapOverlays) {
+                if (l != thisLayer) {
+                  thisView.map.removeLayer(thisView.mapOverlays[l]);
+                }
+              }
+              
+              // Show the one we want;
+              thisView.map.addLayer(thisView.mapOverlays[thisLayer]);
+
+              // Add labels on top
+              thisView.map.removeLayer(thisView.mapOverlayKeepTop);
+              thisView.map.addLayer(thisView.mapOverlayKeepTop);
+            });
+          },
+          
+          // Handles drawing side view
+          drawSide: function() {
+            var template = _.template($("#template-side-column").html(), { });
+            $(this.options.applicationSelector).append(template);
+            
+            // Move map over, and append
+            $('#map').css({ width: '70%' });
+            $('.side-column').css({ width: '30%', float: 'left' });
+            this.map.invalidateSize();
           },
           
           // Handles drawing map
@@ -141,28 +218,29 @@
             var overlays = {};
             
             // Mapbox base layer
-            thisView.mapLayers.mapboxBase = new L.TileLayer("http://{s}.tiles.mapbox.com/v3/zzolo.map-6m4vfqel/{z}/{x}/{y}.png", {
-              attribution: 'Some map imagery from <a target="_blank" href="http://mapbox.com">Mapbox</a>; ', 
+            this.mapLayers.mapboxBase = new L.TileLayer("http://{s}.tiles.mapbox.com/v3/zzolo.map-6m4vfqel/{z}/{x}/{y}.png", {
+              attribution: 'Some map imagery from <a target="_blank" href="http://mapbox.com">Mapbox</a>', 
               subdomains: ['a', 'b', 'c', 'd']
             });
-            this.map.addLayer(thisView.mapLayers.mapboxBase);
+            this.map.addLayer(this.mapLayers.mapboxBase);
           
             // Minnnpost base map
-            thisView.mapLayers.minnpostBase = new L.TileLayer('http://{s}.tiles.minnpost.com/minnpost-basemaps/' +
+            this.mapLayers.minnpostBase = new L.TileLayer('http://{s}.tiles.minnpost.com/minnpost-basemaps/' +
               'minnpost-minnesota-greyscale-no-labels/{z}/{x}/{y}.png', {
-                attribution: 'Some map imagery from <a target="_blank" href="http://minnpost.com">MinnPost</a>; ' +
-                  'Some map data from <a target="_blank" href="http://openstreetmap.org">OpenStreetMap</a>; ',
+                attribution: 'Some map imagery from <a target="_blank" href="http://minnpost.com">MinnPost</a>, ' +
+                  'Some map data from <a target="_blank" href="http://openstreetmap.org">OpenStreetMap</a>',
                 scheme: 'tms'
               }
             );
-            this.map.addLayer(thisView.mapLayers.minnpostBase);
+            this.map.addLayer(this.mapLayers.minnpostBase);
             
             // Labels
-            thisView.mapLayers.minnpostLabels = new L.TileLayer('http://{s}.tiles.minnpost.com/minnpost-basemaps/' +
+            this.mapLayers.minnpostLabels = new L.TileLayer('http://{s}.tiles.minnpost.com/minnpost-basemaps/' +
               'minnpost-minnesota-greyscale-labels/{z}/{x}/{y}.png', {
                 scheme: 'tms'
               }
             );
+            this.mapOverlayKeepTop = this.mapLayers.minnpostLabels;
             
             // Add leg layer with TileJSON
             wax.tilejson('http://a.tiles.minnpost.com/minnpost-election-map-2012/mn-state-leg/tilejson.jsonp', function(tilejson) {
@@ -170,7 +248,7 @@
             
               // Create new layer
               thisView.mapLayers.legLayer = new wax.leaf.connector(tilejson);
-              overlays[tilejson.name] = thisView.mapLayers.legLayer;
+              thisView.mapOverlays[tilejson.name] = thisView.mapLayers.legLayer;
               thisView.map.addLayer(thisView.mapLayers.legLayer);
             
               // Add leg layer with TileJSON
@@ -179,7 +257,7 @@
             
                 // Create new layer
                 thisView.mapLayers.senLayer = new wax.leaf.connector(tilejson);
-                overlays[tilejson.name] = thisView.mapLayers.senLayer;
+                thisView.mapOverlays[tilejson.name] = thisView.mapLayers.senLayer;
                 
                 // Interation for leglayer
                 /*
@@ -191,10 +269,9 @@
                 
                 // Add labels
                 thisView.map.addLayer(thisView.mapLayers.minnpostLabels);
-                  
-                // Add control for layers
-                var layersControl = new L.Control.Layers(baselayers, overlays);
-                thisView.map.addControl(layersControl);
+                
+                // Make layer switcher
+                thisView.drawLayerSwitcher();
               });
             });
             
