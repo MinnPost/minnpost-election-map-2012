@@ -89,7 +89,7 @@
       <div class="side-column">
         <div class="side-column-inner">
           <h3>Search</h3>
-          <div class="search-address">
+          <div class="search-address-container">
             <form class="search-address-form">
               <label for="search-address-input">Search address:</label>
               <input type="text" id="search-address-input" />
@@ -100,7 +100,7 @@
           <div class="layer-switcher-container">
           </div>
           
-          <div class="map-popup-contents">
+          <div class="map-popup-container">
           
           </div>
         </div>
@@ -112,6 +112,21 @@
           <li><a href="#" data-id="<%= l %>"><%= l %></a></li>
         <% } %>
       </ul>
+    </script>
+    <script id="template-popup-contents" type="text/template">
+      <h3><%= tileData.DISTRICT %></h3>
+      <ul>
+        <% for (var c in cands) { %>
+          <li>
+            <% if (_.isString(cands[c].website) && cands[c].website !== '') { %>
+              <a href="cands[c].website" target="_blank"><%= cands[c].candidate %></a> (<%= cands[c].party %>)
+            <% } else { %>
+              <%= cands[c].candidate %> (<%= cands[c].party %>)
+            <% } %>
+          </li>
+        <% } %>
+      </ul>
+      <div>PVI: <%= tileData.RPVI %></div>
     </script>
   
     <!-- jQuery -->
@@ -141,19 +156,43 @@
             'mapID': 'map',
             'mapDefaultCenter': new L.LatLng(46.49839225859763, -93.6474609375),
             'mapDefaultZoom': 6,
-            'applicationSelector': '#minnpost-election-map-2012-application'
+            'applicationSelector': '#minnpost-election-map-2012-application',
+            'candidateScraperURL': 'https://api.scraperwiki.com/api/1.0/datastore/sqlite?format=jsondict&name=minnesota_registered_candidates&query=select%20*%20from%20%60swdata%60%20&callback=?'
           },
           
           // Some placeholders
+          candidates: {},
           mapLayers: {},
           mapTileJSON: {},
           mapOverlays: {},
+          mapInteractions: {},
           
           // Init funciton
           initialize: function() {
+            this.loadCandidates();
             this.drawMap();
             this.drawSide();
             
+          },
+          
+          // Load candidates
+          loadCandidates: function() {
+            var thisView = this;
+            $.getJSON(thisView.options.candidateScraperURL, function(candData) {
+              thisView.candidates = candData;
+            });
+          },
+          
+          // Get Candidates
+          getCandidates: function(office) {
+            var found = [];
+          
+            if (!_.isEmpty(this.candidates)) {
+              found = _.filter(this.candidates, function(cand) {
+                return (cand.office == office) ? true : false;
+              });
+            }
+            return found;
           },
           
           // Handles drawing layer switcher content
@@ -250,6 +289,26 @@
               thisView.mapLayers.legLayer = new wax.leaf.connector(tilejson);
               thisView.mapOverlays[tilejson.name] = thisView.mapLayers.legLayer;
               thisView.map.addLayer(thisView.mapLayers.legLayer);
+              
+              // Add interaction
+              thisView.mapInteractions[tilejson.name] = wax.leaf.interaction()
+                .map(thisView.map)
+                .tilejson(tilejson)
+                .on({
+                  on: function(e) {
+                    var $popup = $('.map-popup-container');
+                    var template = _.template($("#template-popup-contents").html(), {
+                      tileData: e.data,
+                      cands: thisView.getCandidates('State Representative District ' + e.data.DISTRICT) 
+                    });
+                    
+                    $popup.html(template);
+                    $popup.fadeIn('fast');
+                  },
+                  off: function(e) {
+                    $('.map-popup-container').fadeOut('fast');
+                  }
+                });
             
               // Add leg layer with TileJSON
               wax.tilejson('http://a.tiles.minnpost.com/minnpost-election-map-2012/mn-state-sen/tilejson.jsonp', function(tilejson) {
