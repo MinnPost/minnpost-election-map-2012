@@ -122,7 +122,7 @@
     </div>
     
     <br class="clear" />
-    <p class="footnote"></p>
+    <p class="footnote">Candidate data from the <a href="http://candidates.sos.state.mn.us/" target="_blank">Office of the Minnesota Secretary of State</a>.  </p>
     
     <!-- Templates to be used in client side processing. -->
     <script id="template-side-column" type="text/template">
@@ -130,10 +130,11 @@
         <div class="side-column-inner">
           <div class="search-address-container">
             <h3>Search address</h3>
-            <form class="search-address-form">
+            <form id="search-address-form" action="#" class="search-form">
               <input type="text" id="search-address-input" class="form-text" />
               <input type="submit" id="search-address-submit" class="form-submit" value="search" />
             </form>
+            <div class="search-status"></div>
           </div>
           
           <div class="layer-switcher-container">
@@ -156,7 +157,9 @@
     </script>
     <script id="template-popup-contents" type="text/template">
       <h4><%= title %></h4>
-      <div class="pvi">Political leaning: <em><%= tileData.RPVI %></em></div>
+      <% if (tileData.RPVI != undefined) { %>
+        <div class="pvi">Political leaning: <em><%= tileData.RPVI %></em></div>
+      <% } %>
       <% if (!_.isEmpty(cands)) { %>
         <ul>
           <% var groups = _.groupBy(cands, 'party'); %>
@@ -207,8 +210,19 @@
             'mapDefaultCenter': new L.LatLng(46.49839225859763, -93.6474609375),
             'mapDefaultZoom': 6,
             'mapDefaultLayer': 'Minnesota State Legislature Districts',
+            'mapMNBounds': [43.499356, -97.239209, 49.384358, -89.489226],
+            'mapGeocodeURL': 'http://open.mapquestapi.com/nominatim/v1/search?format=json&json_callback=?&countrycodes=us&limit=1&q=',
             'applicationSelector': '#minnpost-election-map-2012-application',
-            'candidateScraperURL': 'https://api.scraperwiki.com/api/1.0/datastore/sqlite?format=jsondict&name=minnesota_registered_candidates&query=select%20*%20from%20%60swdata%60%20&callback=?'
+            'candidateScraperURL': 'https://api.scraperwiki.com/api/1.0/datastore/sqlite?format=jsondict&name=minnesota_registered_candidates&query=select%20*%20from%20%60swdata%60%20&callback=?',
+            'boundaryURL': 'http://boundaries.minnpost.com/1.0/boundary/?sets=minnesota-state-house-districts,minnesota-state-senate-districts&callback=?&contains=',
+            'translateLayerToBoundary': {
+              'Minnesota State Legislature Districts': 'Minnesota State House district',
+              'Minnesota State Senate Districts': 'Minnesota State Senate district'
+            },
+            'translateLayerToDistrict': {
+              'Minnesota State Legislature Districts': 'State Representative District ',
+              'Minnesota State Senate Districts': 'State Senator District '
+            }
           },
           
           // Some placeholders
@@ -222,7 +236,107 @@
             this.loadCandidates();
             this.drawMap();
             this.drawSide();
+            this.initAddressSearch();
             
+          },
+          
+          // Address found
+          renderAddressFound: function() {
+            if (this.addressFound == undefined || _.isEmpty(this.addressFound)) {
+              return this;
+            }
+            var point = new L.LatLng(this.addressFound.lat, this.addressFound.lon);
+            var b;
+            var boundary;
+            var district;
+            var template;
+            var $popup = $('.map-popup-container');
+            
+            // Place marker
+            this.marker = new L.Marker(point);
+            this.map.setView(point, 10);
+            this.map.addLayer(this.marker);
+            
+            // Determine district
+            boundary = this.options.translateLayerToBoundary[this.currentLayer];
+            district = this.options.translateLayerToDistrict[this.currentLayer];
+            for (b in this.addressFound.boundaries.objects) {
+              if (this.addressFound.boundaries.objects[b].kind == boundary) {
+                template = _.template($("#template-popup-contents").html(), {
+                  tileData: {},
+                  cands: this.getCandidates(district + this.addressFound.boundaries.objects[b].name),
+                  title: district + this.addressFound.boundaries.objects[b].name
+                });
+                
+                $popup.html(template);
+                $popup.fadeIn('fast');
+              }
+            }
+            
+            return this;
+          },
+          
+          // Load candidates
+          initAddressSearch: function() {
+            var thisView = this;
+              
+            $('form#search-address-form').submit(function(e) {
+              e.preventDefault();
+              var address = $('input#search-address-input').val();
+              if (address == '') {
+                return;
+              }
+              
+              $('.search-status').removeClass('error').html('Searching...');
+            
+              // Geocode address using Mapquest becuase its terms of service are more open,
+              // though its geocoding is not the best.
+              $.getJSON(thisView.options.mapGeocodeURL + encodeURI(address), function(value) {
+                var mnBounds = thisView.options.mapMNBounds;
+                value = value[0];
+                if (value === undefined) {
+                  thisView.showAddressStatus('error', 'We were unable turn your search terms, ' + address + 
+                    ', into a geographical location.  Please be more specific, such as including ZIP code.');
+                }
+                // Check we are still mostly in Minnesota
+                else if (value.lat < mnBounds[0] || value.lat > mnBounds[2] || 
+                  value.lon < mnBounds[1] || value.lon > mnBounds[3]) {
+                  thisView.showAddressStatus('error', 'Sorry, but what you are looking for is outside of Minnesota.');
+                }
+                else {
+                  // Use boundary service
+                  $.getJSON(thisView.options.boundaryURL + encodeURI(value.lat) + ',' + encodeURI(value.lon), function(data) {
+                    if (data.meta.total_count == undefined || data.meta.total_count == 0) {
+                      thisView.showAddressStatus('error', 'Sorry, we were unable to determine the district from that address.');
+                    }
+                    else {
+                      $('.search-status').fadeOut('fast');
+                      thisView.addressFound = {
+                        lat: value.lat,
+                        lon: value.lon,
+                        boundaries: data
+                      };
+                      thisView.renderAddressFound();
+                    }
+                  });
+                }
+              });
+              
+              return this;
+            });
+          },
+          
+          // Status and erros for address search
+          showAddressStatus: function(type, status) {
+            $('.search-status').html(status);
+            $('.search-status').fadeIn('fast');
+            if (type == 'error') {
+              $('.search-status').addClass('error');
+            }
+            else {
+              $('.search-status').removeClass('error');
+            }
+            return this;
           },
           
           // Load candidates
@@ -231,6 +345,8 @@
             $.getJSON(thisView.options.candidateScraperURL, function(candData) {
               thisView.candidates = candData;
             });
+            
+            return this;
           },
           
           // Get Candidates
@@ -289,6 +405,8 @@
               thisView.map.removeLayer(thisView.mapOverlayKeepTop);
               thisView.map.addLayer(thisView.mapOverlayKeepTop);
             });
+            
+            return this;
           },
           
           // Handles drawing side view
@@ -300,6 +418,8 @@
             $('#map').css({ width: '60%' });
             $('.side-column').css({ width: '40%', float: 'left' });
             this.map.invalidateSize();
+            
+            return this;
           },
           
           // Handles drawing map
