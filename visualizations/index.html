@@ -88,11 +88,11 @@
     <script id="template-side-column" type="text/template">
       <div class="side-column">
         <div class="side-column-inner">
-          <h3>Search</h3>
+          <h3>Search address</h3>
           <div class="search-address-container">
             <form class="search-address-form">
-              <label for="search-address-input">Search address:</label>
-              <input type="text" id="search-address-input" />
+              <input type="text" id="search-address-input" class="form-text" />
+              <input type="submit" id="search-address-submit" class="form-submit" value="search" />
             </form>
           </div>
           
@@ -101,7 +101,6 @@
           </div>
           
           <div class="map-popup-container">
-          
           </div>
         </div>
       </div>
@@ -109,24 +108,26 @@
     <script id="template-layer-switcher" type="text/template">
       <ul>
         <% for (var l in layers) { %>
-          <li><a href="#" data-id="<%= l %>"><%= l %></a></li>
+          <li><a href="#" 
+            class="<% if (!_.isUndefined(layers[l].active) && layers[l].active === true) { %>active<% } %>" 
+            data-id="<%= l %>"><%= l %></a></li>
         <% } %>
       </ul>
     </script>
     <script id="template-popup-contents" type="text/template">
-      <h3><%= tileData.DISTRICT %></h3>
+      <h3><%= title %></h3>
+      <div class="pvi">Political leaning: <%= tileData.RPVI %></div>
       <ul>
         <% for (var c in cands) { %>
           <li>
             <% if (_.isString(cands[c].website) && cands[c].website !== '') { %>
-              <a href="cands[c].website" target="_blank"><%= cands[c].candidate %></a> (<%= cands[c].party %>)
+              <a href="http://<%= cands[c].website %>" target="_blank"><%= cands[c].candidate %></a> (<%= cands[c].party %>)
             <% } else { %>
               <%= cands[c].candidate %> (<%= cands[c].party %>)
             <% } %>
           </li>
         <% } %>
       </ul>
-      <div>PVI: <%= tileData.RPVI %></div>
     </script>
   
     <!-- jQuery -->
@@ -156,6 +157,7 @@
             'mapID': 'map',
             'mapDefaultCenter': new L.LatLng(46.49839225859763, -93.6474609375),
             'mapDefaultZoom': 6,
+            'mapDefaultLayer': 'Minnesota State Legislature Districts',
             'applicationSelector': '#minnpost-election-map-2012-application',
             'candidateScraperURL': 'https://api.scraperwiki.com/api/1.0/datastore/sqlite?format=jsondict&name=minnesota_registered_candidates&query=select%20*%20from%20%60swdata%60%20&callback=?'
           },
@@ -165,7 +167,6 @@
           mapLayers: {},
           mapTileJSON: {},
           mapOverlays: {},
-          mapInteractions: {},
           
           // Init funciton
           initialize: function() {
@@ -199,7 +200,10 @@
           drawLayerSwitcher: function() {
             var thisView = this;
             // For each data layer, add link
-            var template = _.template($("#template-layer-switcher").html(), { layers: this.mapOverlays });
+            var template = _.template($("#template-layer-switcher").html(), {
+              layers: this.mapOverlays,
+              defaultLayer: this.options.mapDefaultLayer
+            });
             $('.layer-switcher-container').append(template);
             
             // Click events
@@ -208,15 +212,29 @@
               var thisLayer = $(this).attr('data-id');
               var l;
               
-              // Go through layers and hide others
+              if (thisLayer == thisView.currentLayer) {
+                return;
+              }
+              thisView.currentLayer = thisLayer;
+              
+              // Hide popup
+              $('.map-popup-container').fadeOut('fast');
+              
+              // Handle list classes
+              $('.layer-switcher-container li a').removeClass('active');
+              $(this).addClass('active');
+              
+              // Go through layers and hide others and remove interactions
               for (l in thisView.mapOverlays) {
                 if (l != thisLayer) {
-                  thisView.map.removeLayer(thisView.mapOverlays[l]);
+                  thisView.map.removeLayer(thisView.mapOverlays[l].layer);
+                  thisView.mapOverlays[l].interaction.remove();
                 }
               }
               
               // Show the one we want;
-              thisView.map.addLayer(thisView.mapOverlays[thisLayer]);
+              thisView.map.addLayer(thisView.mapOverlays[thisLayer].layer);
+              thisView.mapOverlays[thisLayer].interaction.map(thisView.map);
 
               // Add labels on top
               thisView.map.removeLayer(thisView.mapOverlayKeepTop);
@@ -282,31 +300,37 @@
             this.mapOverlayKeepTop = this.mapLayers.minnpostLabels;
             
             // Add leg layer with TileJSON
-            wax.tilejson('http://a.tiles.minnpost.com/minnpost-election-map-2012/mn-state-leg/tilejson.jsonp', function(tilejson) {
+            wax.tilejson('http://a.tiles.minnpost.com/minnpost-election-map-2012/mn-state-leg/tilejson.jsonp', 
+              function(tilejson) {
               thisView.mapTileJSON.legLayer = tilejson;
             
-              // Create new layer
+              // Create new layer and track data
               thisView.mapLayers.legLayer = new wax.leaf.connector(tilejson);
-              thisView.mapOverlays[tilejson.name] = thisView.mapLayers.legLayer;
+              thisView.mapOverlays[tilejson.name] = { layer: thisView.mapLayers.legLayer, active: true };
+              thisView.currentLayer = tilejson.name;
               thisView.map.addLayer(thisView.mapLayers.legLayer);
               
               // Add interaction
-              thisView.mapInteractions[tilejson.name] = wax.leaf.interaction()
+              thisView.mapOverlays[tilejson.name].interaction = wax.leaf.interaction()
                 .map(thisView.map)
                 .tilejson(tilejson)
                 .on({
                   on: function(e) {
-                    var $popup = $('.map-popup-container');
-                    var template = _.template($("#template-popup-contents").html(), {
-                      tileData: e.data,
-                      cands: thisView.getCandidates('State Representative District ' + e.data.DISTRICT) 
-                    });
-                    
-                    $popup.html(template);
-                    $popup.fadeIn('fast');
-                  },
-                  off: function(e) {
-                    $('.map-popup-container').fadeOut('fast');
+                    if (e.e.type == 'mouseup') {
+                      // Remove leading zero
+                      if (e.data.DISTRICT.indexOf('0') === 0) {
+                        e.data.DISTRICT = e.data.DISTRICT.slice(1);
+                      }
+                      var $popup = $('.map-popup-container');
+                      var template = _.template($("#template-popup-contents").html(), {
+                        tileData: e.data,
+                        cands: thisView.getCandidates('State Representative District ' + e.data.DISTRICT),
+                        title: 'State Representative District ' + e.data.DISTRICT
+                      });
+                      
+                      $popup.html(template);
+                      $popup.fadeIn('fast');
+                    }
                   }
                 });
             
@@ -316,15 +340,33 @@
             
                 // Create new layer
                 thisView.mapLayers.senLayer = new wax.leaf.connector(tilejson);
-                thisView.mapOverlays[tilejson.name] = thisView.mapLayers.senLayer;
-                
-                // Interation for leglayer
-                /*
-                wax.leaf.interaction()
+                thisView.mapOverlays[tilejson.name] = { layer: thisView.mapLayers.senLayer };
+              
+                // Add interaction
+                thisView.mapOverlays[tilejson.name].interaction = wax.leaf.interaction()
                   .map(thisView.map)
                   .tilejson(tilejson)
-                  .on(wax.tooltip().parent(thisView.map._container).events());
-                */
+                  .on({
+                    on: function(e) {
+                      if (e.e.type == 'mouseup') {
+                        // Remove leading zero
+                        if (e.data.DISTRICT.indexOf('0') === 0) {
+                          e.data.DISTRICT = e.data.DISTRICT.slice(1);
+                        }
+                        var $popup = $('.map-popup-container');
+                        var template = _.template($("#template-popup-contents").html(), {
+                          tileData: e.data,
+                          cands: thisView.getCandidates('State Senator District ' + e.data.DISTRICT),
+                          title: 'State Senator District ' + e.data.DISTRICT
+                        });
+                        
+                        $popup.html(template);
+                        $popup.fadeIn('fast');
+                      }
+                    }
+                  });
+                // Remove
+                thisView.mapOverlays[tilejson.name].interaction.remove();
                 
                 // Add labels
                 thisView.map.addLayer(thisView.mapLayers.minnpostLabels);
