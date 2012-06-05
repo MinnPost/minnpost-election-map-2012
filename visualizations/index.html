@@ -118,6 +118,9 @@
       .candidate-name {
         text-transform: capitalize;
       }
+      .dropped {
+        text-decoration: line-through;
+      }
     </style>
     <!-- END: To be inline CSS -->
     
@@ -186,14 +189,16 @@
             <% for (var c in gCands) { %>
               <li>
                 <span class="party-<%= gCands[c].party %>"></span>
-                <span class="candidate-name">
-                  <% if (_.isString(gCands[c].website) && gCands[c].website !== '') { %>
-                    <a href="http://<%= gCands[c].website %>" target="_blank"><%= gCands[c].candidate %></a>
-                  <% } else { %>
-                    <%= gCands[c].candidate %>
-                  <% } %>
-                </span>
-                (<%= gCands[c].party %>)
+                 <% if (gCands[c].dropout !== undefined && gCands[c].dropout == 1) { %><span class="dropped"><% } %>
+                  <span class="candidate-name">
+                    <% if (_.isString(gCands[c].website) && gCands[c].website !== '') { %>
+                      <a href="http://<%= gCands[c].website %>" target="_blank"><%= gCands[c].candidate %></a>
+                    <% } else { %>
+                      <%= gCands[c].candidate %>
+                    <% } %>
+                  </span>
+                  (<%= gCands[c].party %>)
+                <% if (gCands[c].dropout !== undefined && gCands[c].dropout == 1) { %></span><% } %>
               </li>
             <% } %>
           <% } %>
