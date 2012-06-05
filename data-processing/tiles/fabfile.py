@@ -251,7 +251,7 @@ def generate_tilejson():
     tilejson_file.write(json.dumps(tilejson, sort_keys = True, indent = 2))
     tilejson_file.close()
     tilejsonp_file = open('%(map)s/tiles/tilejson.jsonp' % env, 'w')
-    tilejsonp_file.write('grid(%s)' % json.dumps(tilejson, sort_keys = True, indent = 2))
+    tilejsonp_file.write('grid(%s);' % json.dumps(tilejson, sort_keys = True, indent = 2))
     tilejsonp_file.close()
 
 
