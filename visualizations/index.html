@@ -231,6 +231,8 @@
             'mapDefaultLayer': 'Minnesota State House Districts',
             'mapMNBounds': [43.499356, -97.239209, 49.384358, -89.489226],
             'mapGeocodeURL': 'http://open.mapquestapi.com/nominatim/v1/search?format=json&json_callback=?&countrycodes=us&limit=1&q=',
+            'mapSenJSONPURL': 'http://a.tiles.minnpost.com/minnpost-election-map-2012/mn-state-sen/tilejson.jsonp',
+            'mapHouseJSONPURL': 'http://a.tiles.minnpost.com/minnpost-election-map-2012/mn-state-leg/tilejson.jsonp',
             'applicationSelector': '#minnpost-election-map-2012-application',
             'candidateScraperURL': 'https://api.scraperwiki.com/api/1.0/datastore/sqlite?format=jsondict&name=minnesota_registered_candidates&query=select%20*%20from%20%60swdata%60%20&callback=?',
             'boundaryURL': 'http://boundaries.minnpost.com/1.0/boundary/?sets=minnesota-state-house-districts,minnesota-state-senate-districts&callback=?&contains=',
@@ -252,11 +254,11 @@
           
           // Default marker
           marker: new L.CircleMarker(new L.LatLng(0, 0), {
-            'color': '#197F10',
-            'weight': 2,
+            'color': '#4A9666',
+            'weight': 1,
             'opacity': 0.9,
-            'fillColor': '#26C318',
-            'fillOpacity': 0.5,
+            'fillColor': '#63B2A7',
+            'fillOpacity': 0.6,
             'radius': 8,
             'clickable': false
           }),
@@ -487,28 +489,17 @@
             
             // Add a marker on click.  Hack around double click
             this.map.on('click', function(e) {
-              // IE 7 does not like this at all, instead of hacking the hack,
-              // IE7 users will just get a little off behavior with double
-              // click
-              if ($.browser.msie && $.browser.version == 7) {
-                thisView.lastFound = 'click';
-                thisView.clearMarker();
-                thisView.marker.setLatLng(e.latlng);
-                thisView.map.addLayer(thisView.marker);
-              }
-              else {
-                thisView.clickCount += 1;
-                if (thisView.clickCount <= 1) {
-                  _.delay(function() {
-                    if (thisView.clickCount <= 1) {
-                      thisView.lastFound = 'click';
-                      thisView.clearMarker();
-                      thisView.marker.setLatLng(e.latlng);
-                      thisView.map.addLayer(thisView.marker);
-                    }
-                    thisView.clickCount = 0;
-                  }, 400);
-                }
+              thisView.clickCount += 1;
+              if (thisView.clickCount <= 1) {
+                _.delay(function() {
+                  if (thisView.clickCount <= 1) {
+                    thisView.lastFound = 'click';
+                    thisView.clearMarker();
+                    thisView.marker.setLatLng(e.latlng);
+                    thisView.map.addLayer(thisView.marker);
+                  }
+                  thisView.clickCount = 0;
+                }, 400);
               }
             });
             
@@ -547,8 +538,7 @@
             this.mapOverlayKeepTop = this.mapLayers.minnpostLabels;
             
             // Add leg layer with TileJSON
-            wax.tilejson('http://a.tiles.minnpost.com/minnpost-election-map-2012/mn-state-leg/tilejson.jsonp', 
-              function(tilejson) {
+            wax.tilejson(thisView.options.mapHouseJSONPURL, function(tilejson) {
               // Odd cache issue
               if (tilejson.name == 'Minnesota State Legislature Districts') {
                 tilejson.name = 'Minnesota State House Districts';
@@ -587,7 +577,7 @@
                 });
             
               // Add leg layer with TileJSON
-              wax.tilejson('http://a.tiles.minnpost.com/minnpost-election-map-2012/mn-state-sen/tilejson.jsonp', function(tilejson) {
+              wax.tilejson(thisView.options.mapSenJSONPURL, function(tilejson) {
                 thisView.mapTileJSON.senLayer = tilejson;
             
                 // Create new layer
