@@ -6,9 +6,9 @@
   <title>MinnPost</title>
   <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
   
-  <link type="text/css" rel="stylesheet" media="all" href="http://www.minnpost.com/sites/default/files/css/css_efc75eaad579035887d5e1ac11c00b78.css" />
-<link type="text/css" rel="stylesheet" media="screen" href="http://www.minnpost.com/sites/default/files/css/css_b444460873a77de36d695396b0924929.css" />
-<link type="text/css" rel="stylesheet" media="print" href="http://www.minnpost.com/sites/default/files/css/css_f3f76e4e053f459547daa56b3627cfe3.css" />
+  <link type="text/css" rel="stylesheet" media="all" href="http://www.minnpost.com/sites/default/files/css/css_897efb6d6ab1b9493387993c479b5760.css" />
+  <link type="text/css" rel="stylesheet" media="screen" href="http://www.minnpost.com/sites/default/files/css/css_3b9128a206079d05707d08a5098dd82c.css" />
+  <link type="text/css" rel="stylesheet" media="print" href="http://www.minnpost.com/sites/default/files/css/css_de1cc6f6bd0846ffe89b17adf1e510de.css" />
 
   <!--[if IE]>
       <link rel="stylesheet" href="http://www.minnpost.com/sites/default/themes/derma/inc/css/ie.css?d" type="text/css" />
@@ -114,6 +114,10 @@
       .map-popup-container .party-IP {
         background-color: #7B7B7B;
       }
+      
+      .candidate-name {
+        text-transform: capitalize;
+      }
     </style>
     <!-- END: To be inline CSS -->
     
@@ -176,12 +180,16 @@
           <% for (var g in groups) { %>
             <% var gCands = _.sortBy(groups[g], 'candidate'); %>
             <% for (var c in gCands) { %>
-              <li><span class="party-<%= gCands[c].party %>"></span>
-                <% if (_.isString(gCands[c].website) && gCands[c].website !== '') { %>
-                  <a href="http://<%= gCands[c].website %>" target="_blank"><%= gCands[c].candidate %></a> (<%= gCands[c].party %>)
-                <% } else { %>
-                  <%= gCands[c].candidate %> (<%= gCands[c].party %>)
-                <% } %>
+              <li>
+                <span class="party-<%= gCands[c].party %>"></span>
+                <span class="candidate-name">
+                  <% if (_.isString(gCands[c].website) && gCands[c].website !== '') { %>
+                    <a href="http://<%= gCands[c].website %>" target="_blank"><%= gCands[c].candidate %></a>
+                  <% } else { %>
+                    <%= gCands[c].candidate %>
+                  <% } %>
+                </span>
+                (<%= gCands[c].party %>)
               </li>
             <% } %>
           <% } %>
@@ -218,18 +226,18 @@
             'mapID': 'map',
             'mapDefaultCenter': new L.LatLng(46.49839225859763, -93.6474609375),
             'mapDefaultZoom': 6,
-            'mapDefaultLayer': 'Minnesota State Legislature Districts',
+            'mapDefaultLayer': 'Minnesota State House Districts',
             'mapMNBounds': [43.499356, -97.239209, 49.384358, -89.489226],
             'mapGeocodeURL': 'http://open.mapquestapi.com/nominatim/v1/search?format=json&json_callback=?&countrycodes=us&limit=1&q=',
             'applicationSelector': '#minnpost-election-map-2012-application',
             'candidateScraperURL': 'https://api.scraperwiki.com/api/1.0/datastore/sqlite?format=jsondict&name=minnesota_registered_candidates&query=select%20*%20from%20%60swdata%60%20&callback=?',
             'boundaryURL': 'http://boundaries.minnpost.com/1.0/boundary/?sets=minnesota-state-house-districts,minnesota-state-senate-districts&callback=?&contains=',
             'translateLayerToBoundary': {
-              'Minnesota State Legislature Districts': 'Minnesota State House district',
+              'Minnesota State House Districts': 'Minnesota State House district',
               'Minnesota State Senate Districts': 'Minnesota State Senate district'
             },
             'translateLayerToDistrict': {
-              'Minnesota State Legislature Districts': 'State Representative District ',
+              'Minnesota State House Districts': 'State Representative District ',
               'Minnesota State Senate Districts': 'State Senator District '
             }
           },
@@ -247,6 +255,13 @@
             this.drawSide();
             this.initAddressSearch();
             
+          },
+          
+          // Clear marker off map
+          clearMarker: function() {
+            if (this.marker != undefined && this.map != undefined) {
+              this.map.removeLayer(this.marker);
+            }
           },
           
           // Address found
@@ -325,6 +340,7 @@
                         lon: value.lon,
                         boundaries: data
                       };
+                      thisView.clearMarker();
                       thisView.renderAddressFound();
                     }
                   });
@@ -413,6 +429,10 @@
               // Add labels on top
               thisView.map.removeLayer(thisView.mapOverlayKeepTop);
               thisView.map.addLayer(thisView.mapOverlayKeepTop);
+              
+              // If there is a marker on the map, then re-render
+              // address found.
+              thisView.renderAddressFound();
             });
             
             return this;
@@ -433,6 +453,9 @@
           
           // Handles drawing map
           drawMap: function() {
+            var thisView = this;
+            this.clickCount = 0;
+            
             this.map = new L.Map(this.options.mapID, this.options.mapOptions);
             this.addMapLayers();
             this.map.setView(this.options.mapDefaultCenter, this.options.mapDefaultZoom);
@@ -442,6 +465,21 @@
             this.map.attributionControl.setPrefix('');
             $('.footnote').html($('.footnote').html() + ' ' + this.map.attributionControl._container.innerHTML);
             this.map.removeControl(this.map.attributionControl);
+            
+            // Add a marker on click.  Hack around double click
+            this.map.on('click', function(e) {
+              thisView.clickCount += 1;
+              if (thisView.clickCount <= 1) {
+                _.delay(function() {
+                  if (thisView.clickCount <= 1) {
+                    thisView.clearMarker();
+                    thisView.marker = new L.Marker(e.latlng);
+                    thisView.map.addLayer(thisView.marker);
+                  }
+                  thisView.clickCount = 0;
+                }, 400);
+              }
+            });
             
             return this;
           },
@@ -480,6 +518,11 @@
             // Add leg layer with TileJSON
             wax.tilejson('http://a.tiles.minnpost.com/minnpost-election-map-2012/mn-state-leg/tilejson.jsonp', 
               function(tilejson) {
+              // Odd cache issue
+              if (tilejson.name == 'Minnesota State Legislature Districts') {
+                tilejson.name = 'Minnesota State House Districts';
+              }
+              
               thisView.mapTileJSON.legLayer = tilejson;
             
               // Create new layer and track data
