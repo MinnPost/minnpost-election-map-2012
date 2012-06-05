@@ -434,7 +434,7 @@
             
             // Activate the default interaction
             if (!this.isIE7()) {
-              thisView.mapInteraction = wax.leaf.interaction().map(thisView.map)
+              thisView.mapInteraction = new wax.leaf.interaction().map(thisView.map)
                 .tilejson(thisView.mapOverlays[thisView.currentLayer].tilejson)
                 .on(thisView.createInteraction(thisView.currentLayer));
             }
@@ -473,7 +473,7 @@
               
               // Render new interaction layer
               if (!thisView.isIE7()) {
-                thisView.mapInteraction = wax.leaf.interaction().map(thisView.map)
+                thisView.mapInteraction = new wax.leaf.interaction().map(thisView.map)
                   .tilejson(thisView.mapOverlays[thisLayer].tilejson)
                   .on(thisView.createInteraction(thisLayer));
               }
