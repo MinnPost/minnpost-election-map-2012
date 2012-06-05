@@ -136,6 +136,8 @@
     <br class="clear" />
     <p class="footnote">Candidate data from the <a href="http://candidates.sos.state.mn.us/" target="_blank">Office of the Minnesota Secretary of State</a>.  Geocoding provided by <a href="http://www.mapquest.com/" target="_blank">Mapquest</a>.  </p>
     
+    <p class="footnote">* Political leaning was calculated by averaging the percentage point advantage of each party's candidates for State House across the 2006, 2008 and 2010 elections. The method is explained in <a href="/data/2012/04/calculating-political-lean-new-legislative-districts">'Calculating political lean of new legislative districts'</a>.</p>
+    
     <!-- Templates to be used in client side processing. -->
     <script id="template-side-column" type="text/template">
       <div class="side-column">
@@ -171,7 +173,7 @@
     <script id="template-popup-contents" type="text/template">
       <h4><%= title %></h4>
       <% if (tileData.RPVI != undefined) { %>
-        <div class="pvi">Political leaning: <em><%= tileData.RPVI %></em></div>
+        <div class="pvi">Political leaning*: <em><%= tileData.RPVI %></em></div>
       <% } %>
       <% if (!_.isEmpty(cands)) { %>
         <ul>
@@ -474,7 +476,7 @@
             
             // Move attributioin to footnotes
             this.map.attributionControl.setPrefix('');
-            $('.footnote').html($('.footnote').html() + ' ' + this.map.attributionControl._container.innerHTML);
+            $('.footnote').first().html($('.footnote').html() + ' ' + this.map.attributionControl._container.innerHTML);
             this.map.removeControl(this.map.attributionControl);
             
             // Add a marker on click.  Hack around double click
