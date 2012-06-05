@@ -290,6 +290,7 @@
             var $popup = $('.map-popup-container');
             
             // Place marker
+            this.lastFound = 'address';
             this.marker.setLatLng(point);
             this.map.setView(point, 10);
             this.map.addLayer(this.marker);
@@ -443,9 +444,14 @@
               thisView.map.removeLayer(thisView.mapOverlayKeepTop);
               thisView.map.addLayer(thisView.mapOverlayKeepTop);
               
-              // If there is a marker on the map, then re-render
-              // address found.
-              thisView.renderAddressFound();
+              // If last found is address, re-render address, otherwise
+              // remove marker
+              if (thisView.lastFound != 'undefined' && thisView.lastFound == 'address') {
+                thisView.renderAddressFound();
+              }
+              else {
+                thisView.clearMarker();
+              }
             });
             
             return this;
@@ -485,6 +491,7 @@
               if (thisView.clickCount <= 1) {
                 _.delay(function() {
                   if (thisView.clickCount <= 1) {
+                    thisView.lastFound = 'click';
                     thisView.clearMarker();
                     thisView.marker.setLatLng(e.latlng);
                     thisView.map.addLayer(thisView.marker);
