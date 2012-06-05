@@ -123,6 +123,20 @@ def export_deploy(concurrency=32, minzoom=None, maxzoom=None):
   deploy_to_s3(concurrency)
   reset_labels()
   
+  
+def deploy_tilejson(concurrency=32, minzoom=None, maxzoom=None):
+  """
+  Deploy just the tilejson export. Optionally takes a concurrency parameter indicating how many files to upload simultaneously.
+  """
+  require('settings', provided_by=[production, staging])
+  require('map', provided_by=[map])
+  
+  create_exports()
+  cleanup_exports()
+  generate_tilejson()
+  deploy_to_s3(concurrency)
+  reset_labels()
+  
 
 def link_caches():
   """
