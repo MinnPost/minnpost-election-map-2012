@@ -73,9 +73,17 @@
       .layer-switcher-container ul,
       .layer-switcher-container li {
         list-style: none;
+        padding-left: 0;
+      }
+      .layer-switcher-container li a {
+        padding: 2px 5px;
       }
       .layer-switcher-container li a.active {
         font-weight: bold;
+        background-color: #e3e3e3;
+        -moz-border-radius: 4px;
+        -webkit-border-radius: 4px;
+        border-radius: 4px;
       }
       
       .map-popup-container {
@@ -122,14 +130,14 @@
     </div>
     
     <br class="clear" />
-    <p class="footnote">Candidate data from the <a href="http://candidates.sos.state.mn.us/" target="_blank">Office of the Minnesota Secretary of State</a>.  </p>
+    <p class="footnote">Candidate data from the <a href="http://candidates.sos.state.mn.us/" target="_blank">Office of the Minnesota Secretary of State</a>.  Geocoding provided by <a href="http://www.mapquest.com/" target="_blank">Mapquest</a>.  </p>
     
     <!-- Templates to be used in client side processing. -->
     <script id="template-side-column" type="text/template">
       <div class="side-column">
         <div class="side-column-inner">
           <div class="search-address-container">
-            <h3>Search address</h3>
+            <h4>Search address</h4>
             <form id="search-address-form" action="#" class="search-form">
               <input type="text" id="search-address-input" class="form-text" />
               <input type="submit" id="search-address-submit" class="form-submit" value="search" />
@@ -138,15 +146,16 @@
           </div>
           
           <div class="layer-switcher-container">
-            <h3>Show districts</h3>
           </div>
           
           <div class="map-popup-container">
+            <p class="footnote">Click on a district to see current candidates.</p> 
           </div>
         </div>
       </div>
     </script>
     <script id="template-layer-switcher" type="text/template">
+      <h4>Choose districts</h4>
       <ul>
         <% for (var l in layers) { %>
           <li><a href="#" 
@@ -427,7 +436,7 @@
             this.map = new L.Map(this.options.mapID, this.options.mapOptions);
             this.addMapLayers();
             this.map.setView(this.options.mapDefaultCenter, this.options.mapDefaultZoom);
-            this.map.addControl(new L.Control.Fullscreen());
+            //this.map.addControl(new L.Control.Fullscreen());
             
             // Move attributioin to footnotes
             this.map.attributionControl.setPrefix('');
