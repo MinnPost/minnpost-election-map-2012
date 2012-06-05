@@ -155,7 +155,9 @@
           </div>
           
           <div class="map-popup-container">
-            <p class="footnote">Click on a district to see current candidates.</p> 
+            <% if (isIE7 === undefined || !isIE7) { %>
+              <p class="footnote">Click on a district to see current candidates.</p> 
+            <% } %>
           </div>
         </div>
       </div>
@@ -264,11 +266,21 @@
           
           // Init funciton
           initialize: function() {
+            if (this.isIE7()) {
+              this.options.mapOptions.doubleClickZoom = false;
+            }
+          
             this.loadCandidates();
             this.drawMap();
             this.drawSide();
             this.initAddressSearch();
             
+          },
+          
+          // IE7 test.  Ran into some serious issues with IE7 so
+          // need to turn off things.  :(
+          isIE7: function() {
+            return ($.browser.msie && $.browser.version == 7);
           },
           
           // Clear marker off map
@@ -416,9 +428,11 @@
             $('.layer-switcher-container').append(template);
             
             // Activate the default interaction
-            thisView.mapInteraction = wax.leaf.interaction().map(thisView.map)
-              .tilejson(thisView.mapOverlays[thisView.currentLayer].tilejson)
-              .on(thisView.createInteraction(thisView.currentLayer));
+            if (!this.isIE7()) {
+              thisView.mapInteraction = wax.leaf.interaction().map(thisView.map)
+                .tilejson(thisView.mapOverlays[thisView.currentLayer].tilejson)
+                .on(thisView.createInteraction(thisView.currentLayer));
+            }
             
             // Click events
             $('.layer-switcher-container li a').click(function(e) {
@@ -453,9 +467,11 @@
               thisView.map.addLayer(thisView.mapOverlayKeepTop);
               
               // Render new interaction layer
-              thisView.mapInteraction = wax.leaf.interaction().map(thisView.map)
+              if (!thisView.isIE7()) {
+                thisView.mapInteraction = wax.leaf.interaction().map(thisView.map)
                   .tilejson(thisView.mapOverlays[thisLayer].tilejson)
                   .on(thisView.createInteraction(thisLayer));
+              }
               
               // If last found is address, re-render address, otherwise
               // remove marker
@@ -506,7 +522,8 @@
           
           // Handles drawing side view
           drawSide: function() {
-            var template = _.template($("#template-side-column").html(), { });
+            var data = (this.isIE7()) ? { 'isIE7': true } : { 'isIE7': false };
+            var template = _.template($("#template-side-column").html(), data);
             $(this.options.applicationSelector).append(template);
             
             // Move map over, and append
@@ -533,20 +550,22 @@
             this.map.removeControl(this.map.attributionControl);
             
             // Add a marker on click.  Hack around double click
-            this.map.on('click', function(e) {
-              thisView.clickCount += 1;
-              if (thisView.clickCount <= 1) {
-                _.delay(function() {
-                  if (thisView.clickCount <= 1) {
-                    thisView.lastFound = 'click';
-                    thisView.clearMarker();
-                    thisView.marker.setLatLng(e.latlng);
-                    thisView.map.addLayer(thisView.marker);
-                  }
-                  thisView.clickCount = 0;
-                }, 400);
-              }
-            });
+            if (!this.isIE7()) {
+              this.map.on('click', function(e) {
+                thisView.clickCount += 1;
+                if (thisView.clickCount <= 1) {
+                  _.delay(function() {
+                    if (thisView.clickCount <= 1) {
+                      thisView.lastFound = 'click';
+                      thisView.clearMarker();
+                      thisView.marker.setLatLng(e.latlng);
+                      thisView.map.addLayer(thisView.marker);
+                    }
+                    thisView.clickCount = 0;
+                  }, 500);
+                }
+              });
+            }
             
             return this;
           },
