@@ -248,6 +248,17 @@
           mapTileJSON: {},
           mapOverlays: {},
           
+          // Default marker
+          marker: new L.CircleMarker(new L.LatLng(0, 0), {
+            'color': '#197F10',
+            'weight': 2,
+            'opacity': 0.9,
+            'fillColor': '#26C318',
+            'fillOpacity': 0.5,
+            'radius': 8,
+            'clickable': false
+          }),
+          
           // Init funciton
           initialize: function() {
             this.loadCandidates();
@@ -277,7 +288,7 @@
             var $popup = $('.map-popup-container');
             
             // Place marker
-            this.marker = new L.Marker(point);
+            this.marker.setLatLng(point);
             this.map.setView(point, 10);
             this.map.addLayer(this.marker);
             
@@ -473,7 +484,7 @@
                 _.delay(function() {
                   if (thisView.clickCount <= 1) {
                     thisView.clearMarker();
-                    thisView.marker = new L.Marker(e.latlng);
+                    thisView.marker.setLatLng(e.latlng);
                     thisView.map.addLayer(thisView.marker);
                   }
                   thisView.clickCount = 0;
