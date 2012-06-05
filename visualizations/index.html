@@ -64,7 +64,7 @@
         float: left;
       }
       .side-column-inner {
-        padding: 10px;
+        padding: 10px 10px 10px 20px;
       }
       
       .layer-switcher-container {
@@ -172,7 +172,7 @@
     </script>
     <script id="template-popup-contents" type="text/template">
       <h4><%= title %></h4>
-      <% if (tileData.RPVI != undefined) { %>
+      <% if (tileData.RPVI !== undefined) { %>
         <div class="pvi">Political leaning*: <em><%= tileData.RPVI %></em></div>
       <% } %>
       <% if (!_.isEmpty(cands)) { %>
@@ -272,14 +272,14 @@
           
           // Clear marker off map
           clearMarker: function() {
-            if (this.marker != undefined && this.map != undefined) {
+            if (this.marker !== undefined && this.map !== undefined) {
               this.map.removeLayer(this.marker);
             }
           },
           
           // Address found
           renderAddressFound: function() {
-            if (this.addressFound == undefined || _.isEmpty(this.addressFound)) {
+            if (this.addressFound === undefined || _.isEmpty(this.addressFound)) {
               return this;
             }
             var point = new L.LatLng(this.addressFound.lat, this.addressFound.lon);
@@ -344,7 +344,7 @@
                 else {
                   // Use boundary service
                   $.getJSON(thisView.options.boundaryURL + encodeURI(value.lat) + ',' + encodeURI(value.lon), function(data) {
-                    if (data.meta.total_count == undefined || data.meta.total_count == 0) {
+                    if (data.meta.total_count === undefined || data.meta.total_count === 0) {
                       thisView.showAddressStatus('error', 'Sorry, we were unable to determine the district from that address.');
                     }
                     else {
@@ -446,7 +446,7 @@
               
               // If last found is address, re-render address, otherwise
               // remove marker
-              if (thisView.lastFound != 'undefined' && thisView.lastFound == 'address') {
+              if (thisView.lastFound !== undefined && thisView.lastFound == 'address') {
                 thisView.renderAddressFound();
               }
               else {
@@ -487,17 +487,28 @@
             
             // Add a marker on click.  Hack around double click
             this.map.on('click', function(e) {
-              thisView.clickCount += 1;
-              if (thisView.clickCount <= 1) {
-                _.delay(function() {
-                  if (thisView.clickCount <= 1) {
-                    thisView.lastFound = 'click';
-                    thisView.clearMarker();
-                    thisView.marker.setLatLng(e.latlng);
-                    thisView.map.addLayer(thisView.marker);
-                  }
-                  thisView.clickCount = 0;
-                }, 400);
+              // IE 7 does not like this at all, instead of hacking the hack,
+              // IE7 users will just get a little off behavior with double
+              // click
+              if ($.browser.msie && $.browser.version == 7) {
+                thisView.lastFound = 'click';
+                thisView.clearMarker();
+                thisView.marker.setLatLng(e.latlng);
+                thisView.map.addLayer(thisView.marker);
+              }
+              else {
+                thisView.clickCount += 1;
+                if (thisView.clickCount <= 1) {
+                  _.delay(function() {
+                    if (thisView.clickCount <= 1) {
+                      thisView.lastFound = 'click';
+                      thisView.clearMarker();
+                      thisView.marker.setLatLng(e.latlng);
+                      thisView.map.addLayer(thisView.marker);
+                    }
+                    thisView.clickCount = 0;
+                  }, 400);
+                }
               }
             });
             
@@ -623,7 +634,7 @@
         
         $(document).ready(function() {
           var electionMapView = new window.MinnPost.MapView();
-        })
+        });
       })(window, jQuery);
     </script>
     <!-- END: To be inline JS -->
