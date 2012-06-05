@@ -203,7 +203,7 @@
   
     <!-- jQuery -->
     <script type="text/javascript">
-      window.jQuery || document.write('<script type="text/javascript" src="https://s3.amazonaws.com/data.minnpost/js/jquery-1.7.2/jquery-1.7.2.min.js"><\/script>')
+      window.jQuery || document.write('<' + 'script type="text/javascript" src="https://s3.amazonaws.com/data.minnpost/js/jquery-1.7.2/jquery-1.7.2.min.js"><\/script>')
     </script>
     <!-- Leaflet and wax for mapping -->
     <script type="text/javascript" src="https://s3.amazonaws.com/data.minnpost/js/leaflet-master-20120531/leaflet.js"></script>
@@ -476,7 +476,11 @@
             
             return {
               on: function(e) {
-                if (e.e.type == 'mouseup') {
+                // Event handling as defined in wax
+                if ((e.e.type === 'mousemove' || !e.e.type)) {
+                  thisView.map._container.style.cursor = 'pointer';
+                }
+                else {
                   // Remove leading zero
                   if (e.data.DISTRICT.indexOf('0') === 0) {
                     e.data.DISTRICT = e.data.DISTRICT.slice(1);
@@ -493,6 +497,9 @@
                   $popup.html(template);
                   $popup.fadeIn('fast');
                 }
+              },
+              off: function(e) {
+                thisView.map._container.style.cursor = 'default';
               }
             };
           },
@@ -594,18 +601,20 @@
             
               // Add senate layer with TileJSON
               wax.tilejson(thisView.options.mapSenJSONPURL, function(tilejson) {
-                // Create new layer
-                thisView.mapLayers.senLayer = new wax.leaf.connector(tilejson);
-                thisView.mapOverlays[tilejson.name] = {
-                  'layer': thisView.mapLayers.senLayer, 
-                  'tilejson': tilejson
-                };
-                
-                // Add labels
-                thisView.map.addLayer(thisView.mapLayers.minnpostLabels);
-                
-                // Make layer switcher
-                thisView.drawLayerSwitcher();
+                if (tilejson !== undefined && _.isArray(tilejson.tiles) && tilejson.tiles.length > 0) {
+                  // Create new layer
+                  thisView.mapLayers.senLayer = new wax.leaf.connector(tilejson);
+                  thisView.mapOverlays[tilejson.name] = {
+                    'layer': thisView.mapLayers.senLayer, 
+                    'tilejson': tilejson
+                  };
+                  
+                  // Add labels
+                  thisView.map.addLayer(thisView.mapLayers.minnpostLabels);
+                  
+                  // Make layer switcher
+                  thisView.drawLayerSwitcher();
+                }
               });
             });
             
