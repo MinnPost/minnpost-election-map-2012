@@ -201,7 +201,14 @@
                  <% if (gCands[c].dropout !== undefined && gCands[c].dropout == 1) { %><span class="dropped"><% } %>
                   <span class="candidate-name">
                     <% if (_.isString(gCands[c].website) && gCands[c].website !== '') { %>
-                      <a href="http://<%= gCands[c].website %>" target="_blank"><%= gCands[c].candidate %></a>
+                      <% if (gCands[c].website.indexOf('http') === 0) {
+                          var website = gCands[c].website;
+                        }
+                        else {
+                          var website = 'http://' + gCands[c].website;
+                        }
+                      %>
+                      <a href="<%= website %>" target="_blank"><%= gCands[c].candidate %></a>
                     <% } else { %>
                       <%= gCands[c].candidate %>
                     <% } %>
