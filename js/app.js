@@ -8,7 +8,7 @@ window.MinnPost = window.MinnPost || {};
     options: {
       'mapOptions': {
         'minZoom': 3,
-        'maxZoom': 12
+        'maxZoom': 11
       },
       'mapID': 'map',
       'mapDefaultCenter': new L.LatLng(46.49839225859763, -93.6474609375),
@@ -16,10 +16,7 @@ window.MinnPost = window.MinnPost || {};
       'mapDefaultLayer': 'Minnesota State House Districts',
       'mapMNBounds': [43.499356, -97.239209, 49.384358, -89.489226],
       'mapGeocodeURL': 'http://open.mapquestapi.com/nominatim/v1/search?format=json&json_callback=?&countrycodes=us&limit=1&q=',
-      'mapSenJSONPURL': 'http://a.tiles.minnpost.com/minnpost-election-map-2012/mn-state-sen/tilejson.jsonp',
-      'mapHouseJSONPURL': 'http://a.tiles.minnpost.com/minnpost-election-map-2012/mn-state-leg/tilejson.jsonp',
       'applicationSelector': '#minnpost-election-map-2012-application',
-      'candidateScraperURL': 'https://api.scraperwiki.com/api/1.0/datastore/sqlite?format=jsondict&name=minnesota_registered_candidates&query=select%20*%20from%20%60swdata%60%20&callback=?',
       'boundaryURL': 'http://boundaries.minnpost.com/1.0/boundary/?sets=state-house-districts-2012,state-senate-districts-2012&callback=?&contains=',
       'translateLayerToBoundary': {
         'Minnesota State House Districts': 'Minnesota State House district',
@@ -56,6 +53,7 @@ window.MinnPost = window.MinnPost || {};
       this.loadCandidates();
       this.drawMap();
       this.drawSide();
+      this.drawLayerSwitcher();
       this.initAddressSearch();
       
     },
@@ -177,7 +175,7 @@ window.MinnPost = window.MinnPost || {};
     // Load candidates
     loadCandidates: function() {
       var thisView = this;
-      $.getJSON(thisView.options.candidateScraperURL, function(candData) {
+      $.getJSON('data/minnesota_registered_candidates.json', function(candData) {
         thisView.candidates = candData;
       });
       
@@ -208,14 +206,8 @@ window.MinnPost = window.MinnPost || {};
         layers: this.mapOverlays,
         defaultLayer: this.options.mapDefaultLayer
       });
-      $('.layer-switcher-container').append(template);
       
-      // Activate the default interaction
-      if (!this.isIE7()) {
-        thisView.mapInteraction = new wax.leaf.interaction().map(thisView.map)
-          .tilejson(thisView.mapOverlays[thisView.currentLayer].tilejson)
-          .on(thisView.createInteraction(thisView.currentLayer));
-      }
+      $('.layer-switcher-container').append(template);
       
       // Click events
       $('.layer-switcher-container li a').click(function(e) {
@@ -238,23 +230,12 @@ window.MinnPost = window.MinnPost || {};
         // Go through layers and hide others and remove interactions
         for (l in thisView.mapOverlays) {
           if (l != thisLayer) {
-            thisView.map.removeLayer(thisView.mapOverlays[l].layer);
+            thisView.map.removeLayer(thisView.mapOverlays[l]);
           }
         }
         
         // Show the one we want;
-        thisView.map.addLayer(thisView.mapOverlays[thisLayer].layer);
-
-        // Add labels on top
-        thisView.map.removeLayer(thisView.mapOverlayKeepTop);
-        thisView.map.addLayer(thisView.mapOverlayKeepTop);
-        
-        // Render new interaction layer
-        if (!thisView.isIE7()) {
-          thisView.mapInteraction = new wax.leaf.interaction().map(thisView.map)
-            .tilejson(thisView.mapOverlays[thisLayer].tilejson)
-            .on(thisView.createInteraction(thisLayer));
-        }
+        thisView.map.addLayer(thisView.mapOverlays[thisLayer]);
         
         // If last found is address, re-render address, otherwise
         // remove marker
@@ -270,37 +251,30 @@ window.MinnPost = window.MinnPost || {};
     },
     
     // Create interaction object
-    createInteraction: function(layer) {
+    createInteraction: function(layer, name) {
       var thisView = this;
       
-      return {
-        on: function(e) {
-          // Event handling as defined in wax
-          if ((e.e.type === 'mousemove' || !e.e.type)) {
-            thisView.map._container.style.cursor = 'pointer';
+      layer
+        .on('mousemove', function(e) {
+          // Remove leading zero
+          if (e.data.DISTRICT.indexOf('0') === 0) {
+            e.data.DISTRICT = e.data.DISTRICT.slice(1);
           }
-          else {
-            // Remove leading zero
-            if (e.data.DISTRICT.indexOf('0') === 0) {
-              e.data.DISTRICT = e.data.DISTRICT.slice(1);
-            }
-            
-            var prefx = thisView.options.translateLayerToDistrict[layer];
-            var $popup = $('.map-popup-container');
-            var template = _.template($("#template-popup-contents").html(), {
-              tileData: e.data,
-              cands: thisView.getCandidates(prefx + e.data.DISTRICT),
-              title: prefx + e.data.DISTRICT
-            });
-            
-            $popup.html(template);
-            $popup.fadeIn('fast');
-          }
-        },
-        off: function(e) {
+          
+          var prefx = thisView.options.translateLayerToDistrict[name];
+          var $popup = $('.map-popup-container');
+          var template = _.template($("#template-popup-contents").html(), {
+            tileData: e.data,
+            cands: thisView.getCandidates(prefx + e.data.DISTRICT),
+            title: prefx + e.data.DISTRICT
+          });
+          
+          $popup.html(template);
+          $popup.fadeIn('fast');
+        })
+        .on('mouseout', function(e) {
           thisView.map._container.style.cursor = 'default';
-        }
-      };
+        });
     },
     
     // Handles drawing side view
@@ -359,66 +333,22 @@ window.MinnPost = window.MinnPost || {};
       var baselayers = {};
       var overlays = {};
       
+      
       // Mapbox base layer
-      this.mapLayers.mapboxBase = new L.TileLayer("http://{s}.tiles.mapbox.com/v3/zzolo.map-6m4vfqel/{z}/{x}/{y}.png", {
-        attribution: 'Some map imagery from <a target="_blank" href="http://mapbox.com">Mapbox</a>', 
-        subdomains: ['a', 'b', 'c', 'd']
+      this.mapLayers.mapboxBase = L.mapbox.tileLayer('minnpost.map-wi88b700', {
+        attribution: 'Some map imagery from <a target="_blank" href="http://mapbox.com">Mapbox</a>'
       });
       this.map.addLayer(this.mapLayers.mapboxBase);
-    
-      // Minnnpost base map
-      this.mapLayers.minnpostBase = new L.TileLayer('http://{s}.tiles.minnpost.com/minnpost-basemaps/' +
-        'minnpost-minnesota-greyscale-no-labels/{z}/{x}/{y}.png', {
-          attribution: 'Some map imagery from <a target="_blank" href="http://minnpost.com">MinnPost</a>, ' +
-            'Some map data from <a target="_blank" href="http://openstreetmap.org">OpenStreetMap</a>',
-          scheme: 'tms'
-        }
-      );
-      this.map.addLayer(this.mapLayers.minnpostBase);
       
-      // Labels
-      this.mapLayers.minnpostLabels = new L.TileLayer('http://{s}.tiles.minnpost.com/minnpost-basemaps/' +
-        'minnpost-minnesota-greyscale-labels/{z}/{x}/{y}.png', {
-          scheme: 'tms'
-        }
-      );
-      this.mapOverlayKeepTop = this.mapLayers.minnpostLabels;
+      this.mapOverlays['Minnesota State House Districts'] = L.mapbox.tileLayer('minnpost.mn-2012-state-leg-leaning');
+      this.mapOverlays['Minnesota State Senate Districts'] = L.mapbox.tileLayer('minnpost.mn-2012-state-sen-leaning');
       
-      // Add leg layer with TileJSON
-      wax.tilejson(thisView.options.mapHouseJSONPURL, function(tilejson) {
-        // Odd cache issue
-        if (tilejson.name == 'Minnesota State Legislature Districts') {
-          tilejson.name = 'Minnesota State House Districts';
-        }
-        
-        // Create new layer and track data
-        thisView.mapLayers.legLayer = new wax.leaf.connector(tilejson);
-        thisView.mapOverlays[tilejson.name] = {
-          'layer': thisView.mapLayers.legLayer, 
-          'tilejson': tilejson,
-          'active': true
-        };
-        thisView.currentLayer = tilejson.name;
-        thisView.map.addLayer(thisView.mapLayers.legLayer);
+      // Activate the default interactions
+      thisView.createInteraction(this.mapOverlays['Minnesota State House Districts'], 'Minnesota State House Districts');
+      thisView.createInteraction(this.mapOverlays['Minnesota State Senate Districts'], 'Minnesota State Senate Districts');
       
-        // Add senate layer with TileJSON
-        wax.tilejson(thisView.options.mapSenJSONPURL, function(tilejson) {
-          if (tilejson !== undefined && _.isArray(tilejson.tiles) && tilejson.tiles.length > 0) {
-            // Create new layer
-            thisView.mapLayers.senLayer = new wax.leaf.connector(tilejson);
-            thisView.mapOverlays[tilejson.name] = {
-              'layer': thisView.mapLayers.senLayer, 
-              'tilejson': tilejson
-            };
-            
-            // Add labels
-            thisView.map.addLayer(thisView.mapLayers.minnpostLabels);
-            
-            // Make layer switcher
-            thisView.drawLayerSwitcher();
-          }
-        });
-      });
+      this.map.addLayer(this.mapOverlays['Minnesota State House Districts']);
+      this.currentLayer = this.mapOverlays['Minnesota State House Districts'];
       
       return this;
     }

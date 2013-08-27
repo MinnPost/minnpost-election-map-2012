@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
 <head>
   <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-  <title>MN Temperature Records 2012</title>
+  <title>MN 2012 State Leg candidates</title>
   <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
   <link rel="shortcut icon" href="http://www.minnpost.com/sites/default/themes/siteskin/favicon.ico" type="image/x-icon" />
   <meta name="viewport" content="width=device-width, initial-scale=1"></meta>
@@ -144,7 +144,7 @@ addthis_config = Drupal.settings.addthis.config_default; addthis_share = Drupal.
       <ul>
         <% for (var l in layers) { %>
           <li><a href="#" 
-            class="<% if (!_.isUndefined(layers[l].active) && layers[l].active === true) { %>active<% } %>" 
+            class="<% if (l == defaultLayer) { %>active<% } %>" 
             data-id="<%= l %>"><%= l %></a></li>
         <% } %>
       </ul>
@@ -213,6 +213,7 @@ addthis_config = Drupal.settings.addthis.config_default; addthis_share = Drupal.
     </script>
     
     <script type="text/javascript" src="./bower_components/jquery/jquery.min.js"></script>
+    <script type="text/javascript" src="./bower_components/jquery/jquery-migrate.min.js"></script>
     <script type="text/javascript" src="./bower_components/underscore/underscore-min.js"></script>
     <script type="text/javascript" src="./bower_components/backbone/backbone-min.js"></script>
     <script type="text/javascript" src="./bower_components/mapbox.js/dist/mapbox.js"></script>
