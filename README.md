@@ -10,6 +10,8 @@ A Minnesotan election map of candidates for 2012.
 
 ## Data processing
 
+Candidate data scraped using `data-processing/candidate-scraper.py`, but this is just a copy of a ScraperWiki scraper and has not been updated to work locally.  For reference see scrapers [1](https://classic.scraperwiki.com/scrapers/minnesota_registered_candidates/) and [2](https://classic.scraperwiki.com/scrapers/minnesota_registered_candidates_1/).
+
 In order to work on tiles, link the maps into the TileMill directory:
 
 ```
