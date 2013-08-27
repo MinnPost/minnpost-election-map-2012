@@ -1,6 +1,34 @@
+node_modules
+components
+bower_components
+!dist
+dist/data.js
+dist/templates.js
+
 # Tile exporting
 data-processing/tiles/*/tiles
 data-processing/tiles/*/tiles-tmp
 data-processing/tiles/*/exports
 data-processing/tiles/*/cache
 data-processing/tiles/*/layers
+
+# General git ignores
+.sass-cache
+.DS_Store
+*.psd
+*.[oa]
+*.py[co]
+*.rbc
+*.egg
+*.egg-info
+develop-eggs
+.installed.cfg
+.Python
+pip-log.txt
+.coverage
+.tox
+*.pbxuser
+*.mode1v3
+*.mode2v3
+*.perspectivev3
+*.xcuserstate
