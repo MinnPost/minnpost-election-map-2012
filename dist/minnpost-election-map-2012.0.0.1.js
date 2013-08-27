@@ -7,6 +7,7 @@ window.MinnPost = window.MinnPost || {};
     // Easy place for options
     options: {
       'dataPath': './data/',
+      'proxyPrefix': 'http://mp-jsonproxy.herokuapp.com/proxy?callback=?&url=',
       'mapOptions': {
         'minZoom': 3,
         'maxZoom': 11
@@ -178,7 +179,14 @@ window.MinnPost = window.MinnPost || {};
     // Load candidates
     loadCandidates: function() {
       var thisView = this;
-      $.getJSON(this.options.dataPath + 'minnesota_registered_candidates.json', function(candData) {
+      var dataSource = this.options.dataPath + 'minnesota_registered_candidates.json';
+      
+      // If the data path is not relative, then use JSONP
+      if (dataSource.indexOf('http') === 0) {
+        dataSource = this.options.proxyPrefix + encodeURI(dataSource);
+      }
+      
+      $.getJSON(dataSource, function(candData) {
         thisView.candidates = candData;
       });
       
