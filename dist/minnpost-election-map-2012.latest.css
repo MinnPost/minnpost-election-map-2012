@@ -1,0 +1,94 @@
+.outside-embeddable-container {
+  max-width: 960px;
+  margin: 0 auto;
+}
+
+.clear {
+  clear: both;
+}
+
+.js-dependent,
+.hide {
+  display: none;
+}
+
+.footnote {
+  font-size: .75em;
+  font-style: italic;
+  color: #414141;
+  margin-top: 1em;
+}
+
+#minnpost-election-map-2012-application {
+  position: relative;
+}
+
+#map {
+  width: 100%;
+  height: 500px;
+  float: left;
+}
+
+.side-column {
+  float: left;
+}
+.side-column-inner {
+  padding: 10px 10px 10px 20px;
+}
+
+.layer-switcher-container {
+  margin-top: 1.5em;
+}
+.layer-switcher-container ul,
+.layer-switcher-container li {
+  list-style: none;
+  padding-left: 0;
+}
+.layer-switcher-container li a {
+  padding: 2px 5px;
+}
+.layer-switcher-container li a.active {
+  font-weight: bold;
+  background-color: #e3e3e3;
+  -moz-border-radius: 4px;
+  -webkit-border-radius: 4px;
+  border-radius: 4px;
+}
+
+.map-popup-container {
+  margin-top: 1.5em;
+}
+.map-popup-container ul,
+.map-popup-container li {
+  list-style: none;
+}
+
+.map-popup-container .party-DFL,
+.map-popup-container .party-R,
+.map-popup-container .party-IP,
+.map-popup-container .party-IND {
+  width: 15px;
+  height: 15px;
+  margin-right: .75em;
+  margin-top: 3px;
+  display: inline-block;
+  zoom: 1;
+  *display: inline;
+}
+.map-popup-container .party-DFL {
+  background-color: #243746;
+}
+.map-popup-container .party-R {
+  background-color: #641a1b;
+}
+.map-popup-container .party-IP,
+.map-popup-container .party-IND {
+  background-color: #7B7B7B;
+}
+
+.candidate-name {
+  text-transform: capitalize;
+}
+.dropped {
+  text-decoration: line-through;
+}
