@@ -6,6 +6,7 @@ window.MinnPost = window.MinnPost || {};
   var MapView = window.MinnPost.MapView = Backbone.View.extend({
     // Easy place for options
     options: {
+      'dataPath': './data/',
       'mapOptions': {
         'minZoom': 3,
         'maxZoom': 11
@@ -45,7 +46,9 @@ window.MinnPost = window.MinnPost || {};
     }),
     
     // Init funciton
-    initialize: function() {
+    initialize: function(options) {
+      this.options = _.extend(this.options, options);
+    
       if (this.isIE7()) {
         this.options.mapOptions.doubleClickZoom = false;
       }
@@ -175,7 +178,7 @@ window.MinnPost = window.MinnPost || {};
     // Load candidates
     loadCandidates: function() {
       var thisView = this;
-      $.getJSON('data/minnesota_registered_candidates.json', function(candData) {
+      $.getJSON(this.options.dataPath + 'minnesota_registered_candidates.json', function(candData) {
         thisView.candidates = candData;
       });
       
