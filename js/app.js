@@ -7,7 +7,7 @@ window.MinnPost = window.MinnPost || {};
     // Easy place for options
     options: {
       'dataPath': './data/',
-      'proxyPrefix': 'http://mp-jsonproxy.herokuapp.com/proxy?callback=?&url=',
+      'proxyPrefix': 'https://mp-jsonproxy.herokuapp.com/proxy?callback=?&url=',
       'mapOptions': {
         'minZoom': 3,
         'maxZoom': 11
@@ -17,9 +17,9 @@ window.MinnPost = window.MinnPost || {};
       'mapDefaultZoom': 6,
       'mapDefaultLayer': 'Minnesota State House Districts',
       'mapMNBounds': [43.499356, -97.239209, 49.384358, -89.489226],
-      'mapGeocodeURL': 'http://open.mapquestapi.com/nominatim/v1/search?format=json&json_callback=?&countrycodes=us&limit=1&q=',
+      'mapGeocodeURL': 'https://open.mapquestapi.com/nominatim/v1/search?format=json&json_callback=?&countrycodes=us&limit=1&q=',
       'applicationSelector': '#minnpost-election-map-2012-application',
-      'boundaryURL': 'http://boundaries.minnpost.com/1.0/boundary/?sets=state-house-districts-2012,state-senate-districts-2012&callback=?&contains=',
+      'boundaryURL': 'https://boundaries.minnpost.com/1.0/boundary/?sets=state-house-districts-2012,state-senate-districts-2012&callback=?&contains=',
       'translateLayerToBoundary': {
         'Minnesota State House Districts': 'Minnesota State House district',
         'Minnesota State Senate Districts': 'Minnesota State Senate district'
@@ -347,7 +347,7 @@ window.MinnPost = window.MinnPost || {};
       
       // Mapbox base layer
       this.mapLayers.mapboxBase = L.mapbox.tileLayer('minnpost.map-wi88b700', {
-        attribution: 'Some map imagery from <a target="_blank" href="http://mapbox.com">Mapbox</a>'
+        attribution: 'Some map imagery from <a target="_blank" href="https://mapbox.com">Mapbox</a>'
       });
       this.map.addLayer(this.mapLayers.mapboxBase);
       
